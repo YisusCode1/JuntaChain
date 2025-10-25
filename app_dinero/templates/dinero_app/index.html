@@ -3,40 +3,41 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>JuntaChain - Rainbow Wallet</title>
+    <title>Junta de Dinero</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
     <header>
-        <div class="logo">🌈 JuntaChain</div>
-        <nav>
+        <div class="logo">💰 JuntaChain</div>
+
+        <!-- Menú oculto al inicio -->
+        <nav id="mainMenu" style="display: none;">
             <ul>
                 <li><a href="#">Inicio</a></li>
-                <li><a href="/crear_junta/">Crear Junta</a></li>
+                <li><a href="#">Crear Junta</a></li>
                 <li><a href="#">Unirse</a></li>
             </ul>
         </nav>
-        <button id="connectButton" class="wallet-btn">Conectar Rainbow</button>
+
+        <button id="connectButton" class="wallet-btn">Conectar Wallet</button>
     </header>
 
     <main class="main-content">
         <h1>Bienvenido a JuntaChain</h1>
-        <p>Conéctate con <strong>Rainbow Wallet</strong> para crear o unirte a una junta de dinero en la red Scroll Sepolia.</p>
-        
-        <div class="wallet-info">
-            <p id="walletAddress" style="font-weight: bold;">No conectado</p>
-        </div>
+        <p>Conéctate con Rainbow Wallet para empezar a crear o unirte a una junta.</p>
+        <p id="walletAddress" style="margin-top:20px; font-weight: bold;"></p>
 
-        <div style="margin-top: 40px;">
-            <button id="crearJuntaBtn" class="btn-principal" onclick="window.location.href='/crear_junta/'">
-                ➕ Crear Junta
-            </button>
-        </div>
+        <!-- Botón Crear Junta (oculto hasta conectar y estar en Scroll Sepolia) -->
+        <button id="btnCrearJunta" class="btn-principal" style="display:none; margin-top:30px;">
+            ➕ Crear Junta
+        </button>
     </main>
 
     <script src="{% static 'js/index.js' %}"></script>
 </body>
 </html>
+
+
 
 
 
