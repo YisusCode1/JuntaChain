@@ -1,0 +1,50 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Junta Creada</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <h1>🎉 ¡Junta Creada Exitosamente!</h1>
+
+    <div class="junta-info">
+        <p><strong>Código de Junta:</strong> {{ junta.codigo }}</p>
+        <p><strong>Número de Participantes:</strong> {{ junta.numero_participantes }}</p>
+        <p><strong>Cantidad a Aportar:</strong> {{ junta.cantidad_aporte }} ETH</p>
+        <p><strong>Dirección del Organizador:</strong> {{ junta.direccion_organizador }}</p>
+        <p><strong>Fecha de Creación:</strong> {{ junta.fecha_creacion }}</p>
+    </div>
+
+    <hr>
+
+    <p>📢 Comparte este código con los participantes para que puedan unirse:</p>
+    <div class="codigo">
+        <input type="text" value="{{ junta.codigo }}" readonly id="codigoJunta">
+        <button onclick="copiarCodigo()">Copiar Código</button>
+    </div>
+
+    <hr>
+
+    <h2>💰 Pagos de Colateral</h2>
+    <p>Cuando cada participante pague su colateral, aparecerá un ✔️ de validación.</p>
+
+    <div id="contenedorPagos"></div>
+
+    <br>
+    <button id="btnEmpezar" disabled>🚀 Empezar Junta</button>
+
+    <!-- Web3 + tu JS -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <script>
+        const juntaData = {
+            numero_participantes: {{ junta.numero_participantes }},
+            cantidad_aporte: {{ junta.cantidad_aporte }},
+            codigo: "{{ junta.codigo }}"
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.umd.min.js"></script>
+    <script src="{% static 'js/ver_junta.js' %}"></script>
+</body>
+</html>

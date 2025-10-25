@@ -6,27 +6,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     const walletInfo = document.getElementById("walletInfo");
     const walletAddressSpan = document.getElementById("walletAddress");
     const walletBalanceSpan = document.getElementById("walletBalance");
+    const walletCollateralSpan = document.getElementById("walletCollateral");
     const menu = document.getElementById("menu");
 
     const provider = window.ethereum;
 
-    // 🔹 Verificar si Rainbow (o cualquier wallet EIP-1193) está disponible
-    if (!provider) {
-        alert("⚠️ Por favor abre esta página desde Rainbow Wallet o una wallet compatible con Scroll.");
+    // 🔹 Solo Rainbow Wallet
+    if (!provider || !provider.isRainbow) {
+        alert("⚠️ Abre esta página desde Rainbow Wallet.");
         return;
     }
 
-    console.log("🌈 Rainbow Wallet o wallet compatible detectada ✅");
+    console.log("🌈 Rainbow Wallet detectada ✅");
     connectWalletBtn.style.display = "inline-block";
 
-    // ⚙️ Función para actualizar la interfaz de la wallet
-    async function updateWalletUI(account) {
+    // ⚙️ Actualizar UI de wallet
+    async function updateWalletUI(account, colateral = 0) {
         if (!account) {
             walletInfo.style.display = "none";
             menu.style.display = "none";
             crearJuntaBtn.disabled = true;
             walletAddressSpan.textContent = "";
             walletBalanceSpan.textContent = "0";
+            walletCollateralSpan.textContent = "0";
             return;
         }
 
@@ -35,51 +37,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         crearJuntaBtn.disabled = false;
         walletAddressSpan.textContent = account;
 
-        const ethersProvider = new ethers.BrowserProvider(provider);
-        const balanceWei = await ethersProvider.getBalance(account);
-        const balanceEth = ethers.formatEther(balanceWei);
-        walletBalanceSpan.textContent = parseFloat(balanceEth).toFixed(4);
-    }
-
-    // 🧭 Forzar conexión a Scroll Sepolia Testnet
-    async function switchToScrollSepolia() {
-        const scrollSepolia = {
-            chainId: "0x82750", // ✅ Correcto ID de Scroll Sepolia
-            chainName: "Scroll Sepolia Testnet",
-            rpcUrls: ["https://sepolia-rpc.scroll.io"],
-            nativeCurrency: { name: "Scroll Sepolia Ether", symbol: "ETH", decimals: 18 },
-            blockExplorerUrls: ["https://sepolia.scrollscan.com"]
-        };
-
         try {
-            await provider.request({
-                method: "wallet_switchEthereumChain",
-                params: [{ chainId: scrollSepolia.chainId }]
-            });
-            console.log("✅ Conectado a Scroll Sepolia");
-        } catch (error) {
-            if (error.code === 4902) {
-                console.log("🆕 Red no encontrada, agregándola...");
-                await provider.request({
-                    method: "wallet_addEthereumChain",
-                    params: [scrollSepolia]
-                });
-                console.log("✅ Scroll Sepolia agregada y conectada");
-            } else {
-                console.error("❌ Error al conectar a la red:", error);
-            }
+            const ethersProvider = new ethers.BrowserProvider(provider);
+            const balanceWei = await ethersProvider.getBalance(account);
+            const balanceEth = parseFloat(ethers.formatEther(balanceWei)).toFixed(4);
+            walletBalanceSpan.textContent = balanceEth;
+
+            // Mostrar colateral si existe, sino 0
+            walletCollateralSpan.textContent = parseFloat(colateral).toFixed(4);
+        } catch (e) {
+            console.error("❌ Error al obtener saldo:", e);
+            walletBalanceSpan.textContent = "0";
+            walletCollateralSpan.textContent = "0";
         }
     }
 
-    // 🔗 Conectar Wallet
+    // 🔗 Conectar Rainbow Wallet
     connectWalletBtn.addEventListener("click", async () => {
-        console.log("🔗 Usuario pidió conectar wallet...");
         try {
-            await switchToScrollSepolia();
             const accounts = await provider.request({ method: "eth_requestAccounts" });
-            if (accounts.length > 0) await updateWalletUI(accounts[0]);
+            if (accounts.length > 0) {
+                // Inicialmente colateral = 0
+                await updateWalletUI(accounts[0], 0);
+            }
         } catch (error) {
-            console.error("❌ Error al conectar la wallet:", error);
+            console.error("❌ Error al conectar Rainbow:", error);
             alert("No se pudo conectar con Rainbow Wallet.");
         }
     });
@@ -90,26 +72,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         window.location.href = url;
     });
 
-    // 👂 Detectar cambios de cuenta o red
-    if (provider) {
-        provider.on("accountsChanged", async (accounts) => {
-            if (accounts.length === 0) {
-                console.log("🔒 Usuario desconectó su wallet");
-                await updateWalletUI(null);
-            } else {
-                await updateWalletUI(accounts[0]);
-            }
-        });
+    // 👂 Detectar cambios de cuenta
+    provider.on("accountsChanged", async (accounts) => {
+        if (accounts.length === 0) {
+            console.log("🔒 Wallet desconectada");
+            await updateWalletUI(null, 0);
+        } else {
+            await updateWalletUI(accounts[0], 0);
+        }
+    });
 
-        provider.on("chainChanged", async (chainId) => {
-            console.log("🔄 Red cambiada:", chainId);
-            if (chainId !== "0x82750") {
-                console.warn("⚠️ Red no es Scroll Sepolia, desconectando wallet.");
-                await updateWalletUI(null);
-            }
-        });
-    }
+    // 👂 Detectar cambios de red
+    provider.on("chainChanged", async (chainId) => {
+        console.log("🔄 Red cambiada:", chainId);
+        alert("⚠️ Red cambiada. Mantente en Scroll Sepolia para continuar.");
+        await updateWalletUI(null, 0);
+    });
 });
+
+
+
 
 
 
