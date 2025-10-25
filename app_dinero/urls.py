@@ -5,5 +5,5 @@ app_name = 'dinero_app'
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('crear/', views.crear_junta, name='crear_junta'),
+    path('crear_junta/', views.crear_junta, name='crear_junta'),
 ]
