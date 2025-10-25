@@ -1,17 +1,71 @@
+# ========================
 # Python
+# ========================
 __pycache__/
 *.py[cod]
+*.so
+*.egg
+*.egg-info/
+*.manifest
+*.spec
 env/
 venv/
-*.sqlite3
+ENV/
+*.pyc
+*.pyo
+*.pyd
+*.log
 
+# ========================
 # Django
-staticfiles/
+# ========================
+*.sqlite3
+db.sqlite3
 media/
+staticfiles/
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.log
+local_settings.py
 
-# IDEs
+# ========================
+# Environment / Secrets
+# ========================
+.env
+*.env
+.env.*
+
+# ========================
+# IDEs / Editors
+# ========================
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
 
-# Environment
-.env
+# ========================
+# OS / System
+# ========================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.bak
+
+# ========================
+# Node / JS (por si tienes frontend con ethers.js)
+# ========================
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+
+# ========================
+# MySQL / Backups
+# ========================
+*.sql
+*.dump
