@@ -1,11 +1,43 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>JuntaChain</title>
+    <title>JuntaChain - Rainbow Wallet</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-    <h1>Bienvenido a JuntaChain 💰</h1>
-    <p>Plataforma descentralizada para juntas de dinero en Scroll Testnet.</p>
+    <header>
+        <div class="logo">🌈 JuntaChain</div>
+        <nav>
+            <ul>
+                <li><a href="#">Inicio</a></li>
+                <li><a href="/crear_junta/">Crear Junta</a></li>
+                <li><a href="#">Unirse</a></li>
+            </ul>
+        </nav>
+        <button id="connectButton" class="wallet-btn">Conectar Rainbow</button>
+    </header>
+
+    <main class="main-content">
+        <h1>Bienvenido a JuntaChain</h1>
+        <p>Conéctate con <strong>Rainbow Wallet</strong> para crear o unirte a una junta de dinero en la red Scroll Sepolia.</p>
+        
+        <div class="wallet-info">
+            <p id="walletAddress" style="font-weight: bold;">No conectado</p>
+        </div>
+
+        <div style="margin-top: 40px;">
+            <button id="crearJuntaBtn" class="btn-principal" onclick="window.location.href='/crear_junta/'">
+                ➕ Crear Junta
+            </button>
+        </div>
+    </main>
+
+    <script src="{% static 'js/index.js' %}"></script>
 </body>
 </html>
+
+
+
+
