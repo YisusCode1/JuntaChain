@@ -9,7 +9,7 @@ JuntaChain busca ser el primer sistema de ahorro comunitario de Web3 en Latinoam
 ## 🚀 Objetivo del Proyecto
 Ofrecer una solución **segura, auditable y transparente** para comunidades y grupos que realizan juntas de ahorro, eliminando intermediarios y garantizando la confianza mediante blockchain.
 
-Este proyecto está desarrollado para la **Hackathon 2025**, bajo la visión de integrar **Django + Web3 + Rainbow Wallet** para construir una DApp funcional que democratice el acceso al ahorro rotativo.
+Este proyecto está desarrollado, bajo la visión de integrar **Django + Web3 + Rainbow Wallet** para construir una DApp funcional que democratice el acceso al ahorro rotativo.
 _____________________________________________________________________________________________
 
 ## 🧩 Tecnologías principales
