@@ -3,39 +3,56 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Junta de Dinero</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JuntaChain - Inicio💰</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
     <header>
-        <div class="logo">💰 JuntaChain</div>
+        <div class="logo">
+            <h1>💰 JuntaChain</h1>
+        </div>
 
-        <!-- Menú oculto al inicio -->
-        <nav id="mainMenu" style="display: none;">
+        <!-- 🔒 Menú oculto hasta conectar MetaMask -->
+        <nav id="menu" style="display: none;">
             <ul>
-                <li><a href="#">Inicio</a></li>
-                <li><a href="#">Crear Junta</a></li>
-                <li><a href="#">Unirse</a></li>
+                <li><a href="/">Inicio</a></li>
+                <li><a href="/crear_junta/">Crear Junta</a></li>
+                <li><a href="{% url 'unirse_junta' %}" class="boton">Unirse</a>
+                <li><a href="/resultados/">Resultados</a></li>
             </ul>
         </nav>
 
-        <button id="connectButton" class="wallet-btn">Conectar Wallet</button>
+        <div class="wallet-container">
+            <button id="connectWalletBtn" class="btn-wallet">🔗 Conectar Wallet</button>
+        </div>
     </header>
 
     <main class="main-content">
-        <h1>Bienvenido a JuntaChain</h1>
-        <p>Conéctate con Rainbow Wallet para empezar a crear o unirte a una junta.</p>
-        <p id="walletAddress" style="margin-top:20px; font-weight: bold;"></p>
+        <section class="intro">
+            <h2>Bienvenido a JuntaChain</h2>
+            <p>Organiza, participa y gana en tus juntas de dinero con tecnología blockchain.</p>
 
-        <!-- Botón Crear Junta (oculto hasta conectar y estar en Scroll Sepolia) -->
-        <button id="btnCrearJunta" class="btn-principal" style="display:none; margin-top:30px;">
-            ➕ Crear Junta
-        </button>
+            <!-- 🔒 Botón deshabilitado hasta conexión MetaMask -->
+            <button id="crear-junta-btn" class="btn-principal" disabled data-url="{% url 'crear_junta' %}">
+                🪙 Crear Junta
+            </button>
+        </section>
+
+        <section id="walletInfo" class="wallet-info" style="display:none;">
+            <h3>Tu billetera</h3>
+            <p><strong>Dirección:</strong> <span id="walletAddress"></span></p>
+            <p><strong>Saldo (ETH):</strong> <span id="walletBalance">0</span></p>
+        </section>
     </main>
 
+    <!-- Librerías -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
     <script src="{% static 'js/index.js' %}"></script>
 </body>
 </html>
+
+
 
 
 
