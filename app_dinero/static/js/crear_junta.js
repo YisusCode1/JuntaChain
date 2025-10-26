@@ -5,155 +5,182 @@ document.addEventListener("DOMContentLoaded", async () => {
     const resultado = document.getElementById("resultado");
     const btnCrear = form.querySelector("button[type='submit']");
 
-    // Etiqueta para mostrar valor en USD
+    // Mostrar valor USD estimado
     const labelUSD = document.createElement("span");
     labelUSD.style.marginLeft = "10px";
     labelUSD.style.fontWeight = "bold";
     labelUSD.style.color = "#2a9d8f";
     inputAporte.insertAdjacentElement("afterend", labelUSD);
 
-    // 1️⃣ Detectar Rainbow Wallet
-    const provider = window.ethereum;
-    if (!provider) {
-        alert("⚠️ Abre esta página desde Rainbow Wallet o instala su extensión.");
+    // ==================== CONEXIÓN WALLET ====================
+    if (!window.ethereum) {
+        alert("⚠️ Abre esta página desde Rainbow Wallet o MetaMask.");
         btnCrear.disabled = true;
         return;
     }
-    console.log("🌈 Rainbow Wallet detectada");
 
-    // 2️⃣ Configurar red Scroll Sepolia
-    const scrollSepolia = {
-        chainId: "0x8274f", // 534351 decimal
-        chainName: "Scroll Sepolia Testnet",
-        rpcUrls: ["https://sepolia-rpc.scroll.io"],
-        nativeCurrency: { name: "Scroll Sepolia Ether", symbol: "ETH", decimals: 18 },
-        blockExplorerUrls: ["https://sepolia.scrollscan.com"],
-    };
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+    inputDireccion.value = address;
+    console.log("✅ Conectado:", address);
 
-    try {
-        const chainId = await provider.request({ method: "eth_chainId" });
-        if (chainId !== scrollSepolia.chainId) {
-            try {
-                await provider.request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: scrollSepolia.chainId }],
-                });
-                console.log("✅ Cambiado a red Scroll Sepolia");
-            } catch (error) {
-                if (error.code === 4902) {
-                    await provider.request({
-                        method: "wallet_addEthereumChain",
-                        params: [scrollSepolia],
-                    });
-                    console.log("🆕 Red Scroll Sepolia agregada y conectada");
-                } else {
-                    throw error;
-                }
-            }
-        }
-    } catch (error) {
-        console.error("❌ Error al cambiar/agregar red:", error);
-        alert("Por favor cambia manualmente a Scroll Sepolia en Rainbow Wallet.");
-        return;
-    }
+    // ==================== CONFIGURACIÓN DEL CONTRATO FACTORY ====================
+    const factoryAddress = "0xED37Ee8928266C14d5f14DD38C1528dc22c86f2b "; // ⚠️ Reemplaza con tu contrato desplegado
+    const factoryABI = [
+	{
+		"inputs": [],
+		"name": "crearJunta",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "organizador",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "juntaAddress",
+				"type": "address"
+			}
+		],
+		"name": "JuntaCreada",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "obtenerJuntas",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "todasLasJuntas",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
 
-    // 3️⃣ Conectar la cuenta Rainbow
-    try {
-        const cuentas = await provider.request({ method: "eth_requestAccounts" });
-        if (cuentas.length === 0) throw new Error("No se detectó ninguna cuenta.");
-        inputDireccion.value = cuentas[0];
-        console.log("✅ Rainbow conectado:", cuentas[0]);
-    } catch (error) {
-        console.error("❌ No se pudo conectar con Rainbow Wallet:", error);
-        alert("No se pudo conectar con Rainbow Wallet.");
-        return;
-    }
+    const contract = new ethers.Contract(factoryAddress, factoryABI, signer);
 
-    // 4️⃣ Función para obtener precio actual de ETH en USD
+    // ==================== PRECIO DE ETH ====================
     async function obtenerPrecioETH() {
         try {
-            const resp = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
-            const data = await resp.json();
+            const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+            const data = await res.json();
             return data.ethereum.usd;
-        } catch (error) {
-            console.error("Error al obtener precio ETH:", error);
+        } catch {
             labelUSD.textContent = "Error obteniendo precio 😢";
-            return null;
+            return 0;
         }
     }
 
-    // Obtener precio inicial y actualizar cada 5 min
     let precioETH = await obtenerPrecioETH();
-    if (!precioETH) precioETH = 0;
-    setInterval(async () => {
-        const nuevoPrecio = await obtenerPrecioETH();
-        if (nuevoPrecio) precioETH = nuevoPrecio;
-    }, 300000);
 
-    // 5️⃣ Mostrar USD equivalente al ETH ingresado
     inputAporte.addEventListener("input", () => {
-        const cantidadETH = parseFloat(inputAporte.value);
-        if (!isNaN(cantidadETH) && cantidadETH > 0) {
-            const cantidadUSD = cantidadETH * precioETH;
-            labelUSD.textContent = `≈ $${cantidadUSD.toFixed(2)} USD`;
+        const eth = parseFloat(inputAporte.value);
+        if (!isNaN(eth) && eth > 0) {
+            const usd = eth * precioETH;
+            labelUSD.textContent = `≈ $${usd.toFixed(2)} USD`;
         } else {
             labelUSD.textContent = "";
         }
     });
 
-    // 6️⃣ Manejar submit del formulario
+    // ==================== SUBMIT ====================
     form.addEventListener("submit", async (e) => {
-        e.preventDefault(); // evitar recarga
-
-        const cantidadETH = parseFloat(form.cantidad_aporte.value);
+        e.preventDefault();
+        const cantidadETH = parseFloat(inputAporte.value);
         if (isNaN(cantidadETH) || cantidadETH <= 0) {
-            alert("Por favor ingresa una cantidad válida de ETH.");
+            alert("Ingresa un valor válido de ETH.");
             return;
         }
 
         const cantidadUSD = cantidadETH * precioETH;
-
-        // Validación del rango en USD
         if (cantidadUSD < 50 || cantidadUSD > 200) {
             alert(`❌ El aporte debe equivaler entre $50 y $200 USD.
-Tu monto actual (${cantidadETH} ETH) equivale a ${cantidadUSD.toFixed(2)} USD.`);
+Tu monto actual equivale a ${cantidadUSD.toFixed(2)} USD.`);
             return;
         }
 
         btnCrear.disabled = true;
-        resultado.innerHTML = `Creando junta... 🔄<br>Aporte: ${cantidadETH} ETH ≈ ${cantidadUSD.toFixed(2)} USD`;
-
-        const formData = new FormData(form);
+        resultado.innerHTML = "⏳ Creando junta on-chain...";
 
         try {
+            // Crear junta en blockchain
+            const tx = await contract.crearJunta();
+            const receipt = await tx.wait();
+
+            // Obtener dirección del evento
+            const evento = receipt.logs
+                .map(log => {
+                    try {
+                        return contract.interface.parseLog(log);
+                    } catch { return null; }
+                })
+                .find(e => e && e.name === "JuntaCreada");
+
+            const juntaAddress = evento ? evento.args.juntaAddress : "No detectado";
+            console.log("🧾 Nueva Junta:", juntaAddress);
+
+            // Guardar también en Django
+            const formData = new FormData(form);
+            formData.append("contract_address", juntaAddress);
+
             const response = await fetch("", {
                 method: "POST",
                 body: formData,
                 headers: { "X-Requested-With": "XMLHttpRequest" }
             });
 
-            if (!response.ok) throw new Error("Error HTTP: " + response.status);
-
             const data = await response.json();
-
             if (data.success) {
-                resultado.innerHTML = `
-                    ✅ Junta creada exitosamente<br>
-                    🧾 Código: ${data.codigo}<br>
-                    💰 Colateral total: ${data.colateral} ETH
-                `;
-                if (data.redirect_url) {
-                    window.location.href = data.redirect_url;
-                }
+                resultado.innerHTML = `✅ Junta creada correctamente<br>📜 Contrato: ${juntaAddress}`;
+                if (data.redirect_url) window.location.href = data.redirect_url;
             } else {
-                resultado.innerHTML = "❌ Error: " + (data.error || "No se pudo crear la junta.");
+                resultado.innerHTML = "❌ Error guardando en servidor.";
             }
-        } catch (error) {
-            console.error("❌ Error al crear la junta:", error);
-            resultado.innerHTML = "❌ Ocurrió un error al crear la junta.";
+        } catch (err) {
+            console.error("Error al crear junta:", err);
+            resultado.innerHTML = "❌ Falló la creación on-chain.";
         } finally {
             btnCrear.disabled = false;
         }
     });
 });
+
 

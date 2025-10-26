@@ -7,44 +7,89 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-    <h1>🎉 ¡Junta Creada Exitosamente!</h1>
 
-    <div class="junta-info">
-        <p><strong>Código de Junta:</strong> {{ junta.codigo }}</p>
-        <p><strong>Número de Participantes:</strong> {{ junta.numero_participantes }}</p>
-        <p><strong>Cantidad a Aportar:</strong> {{ junta.cantidad_aporte }} ETH</p>
-        <p><strong>Dirección del Organizador:</strong> {{ junta.direccion_organizador }}</p>
-        <p><strong>Fecha de Creación:</strong> {{ junta.fecha_creacion }}</p>
-    </div>
+    <!-- ======= ENCABEZADO ======= -->
+    <header>
+        <div class="logo">
+            <h1>💰 Junta Virtual</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/">Inicio</a></li>
+                <li><a href="/crear_junta">Crear Junta</a></li>
+                <li><a href="/unirse">Unirse</a></li>
+            </ul>
+        </nav>
+        <div class="wallet-container">
+            <button class="btn-wallet">Conectar Wallet</button>
+        </div>
+    </header>
 
-    <hr>
+    <!-- ======= CONTENIDO PRINCIPAL ======= -->
+    <main class="main-content">
+        <h1>🎉 ¡Junta Creada Exitosamente!</h1>
 
-    <p>📢 Comparte este código con los participantes para que puedan unirse:</p>
-    <div class="codigo">
-        <input type="text" value="{{ junta.codigo }}" readonly id="codigoJunta">
-        <button onclick="copiarCodigo()">Copiar Código</button>
-    </div>
+        <div class="wallet-info">
+            <p><strong>Código de Junta:</strong> {{ juntaData.codigo }}</p>
+            <p><strong>Número de Participantes:</strong> {{ juntaData.numero_participantes }}</p>
+            <p><strong>Cantidad a Aportar:</strong> {{ juntaData.cantidad_aporte }} ETH</p>
+            <p><strong>Dirección del Organizador:</strong> {{ juntaData.direccion_organizador }}</p>
+            <p><strong>Fecha de Creación:</strong> {{ juntaData.fecha_creacion }}</p>
+        </div>
 
-    <hr>
+        {% if juntaData.contract_address %}
+            <p><strong>📜 Contrato:</strong> 
+                <a href="https://sepolia.etherscan.io/address/{{ juntaData.contract_address }}" target="_blank">
+                    {{ juntaData.contract_address }}
+                </a>
+            </p>
+        {% else %}
+            <p style="color:gray;">⚠️ Esta junta aún no tiene contrato asignado.</p>
+        {% endif %}
 
-    <h2>💰 Pagos de Colateral</h2>
-    <p>Cuando cada participante pague su colateral, aparecerá un ✔️ de validación.</p>
+        <h2>📢 Comparte este código con los participantes</h2>
+        <div class="codigo">
+            <input type="text" value="{{ juntaData.codigo }}" readonly id="codigoJunta">
+            <button class="wallet-btn" onclick="copiarCodigo()">📋 Copiar Código</button>
+        </div>
 
-    <div id="contenedorPagos"></div>
+        <hr>
 
-    <br>
-    <button id="btnEmpezar" disabled>🚀 Empezar Junta</button>
+        <h2>💰 Pagos de Colateral</h2>
+        <p>Cuando cada participante pague su colateral, aparecerá un ✔️ de validación.</p>
 
-    <!-- Web3 + tu JS -->
+        <div id="contenedorPagos"></div>
+
+        <br>
+
+        <!-- 🔹 Botón de Aporte -->
+        <button id="btnAporte" class="btn-principal" disabled>💸 Aporte</button>
+
+        <!-- 🔹 Temporizador (inicialmente oculto) -->
+        <div id="temporizador" style="display:none; font-weight: bold; color: #e63946; margin-top: 15px;">
+            ⏳ Tiempo restante: 48:00:00
+        </div>
+    </main>
+
+    <!-- ======= SCRIPTS ======= -->
     <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
-    <script>
-        const juntaData = {
-            numero_participantes: {{ junta.numero_participantes }},
-            cantidad_aporte: {{ junta.cantidad_aporte }},
-            codigo: "{{ junta.codigo }}"
-        };
-    </script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.umd.min.js"></script>
+
+    <!-- ✅ Pasamos juntaData directamente desde Django al JS -->
+    <script>
+        const juntaData = {{ juntaData|safe }};
+        
+        function copiarCodigo() {
+            const input = document.getElementById("codigoJunta");
+            input.select();
+            document.execCommand("copy");
+            alert("📋 Código copiado al portapapeles");
+        }
+    </script>
+
+    <!-- Tu archivo JS que maneja el contrato -->
     <script src="{% static 'js/ver_junta.js' %}"></script>
 </body>
 </html>
+
+

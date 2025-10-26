@@ -4,20 +4,25 @@ from django.db.models import Max
 from .models import Junta
 
 
+# ===========================
 # Página de inicio
+# ===========================
 def index(request):
     return render(request, 'dinero_app/index.html')
 
 
+# ===========================
 # Crear una nueva junta
+# ===========================
 def crear_junta(request):
     if request.method == 'POST':
         try:
             numero_participantes = int(request.POST.get('numero_participantes'))
             cantidad_aporte = float(request.POST.get('cantidad_aporte'))
             direccion_organizador = request.POST.get('direccion_organizador')
+            contract_address = request.POST.get('contract_address')  # ✅ viene del front o Factory
 
-            # Obtener el último código existente (solo los que son numéricos)
+            # Obtener el último código existente (solo los numéricos)
             ultimo_codigo = Junta.objects.aggregate(Max('codigo'))['codigo__max']
             try:
                 nuevo_numero = int(ultimo_codigo) + 1 if ultimo_codigo else 1
@@ -26,15 +31,16 @@ def crear_junta(request):
 
             nuevo_codigo = str(nuevo_numero).zfill(6)
 
-            # Crear la junta con el código ya asignado
+            # Crear la junta
             nueva_junta = Junta.objects.create(
                 numero_participantes=numero_participantes,
                 cantidad_aporte=cantidad_aporte,
                 direccion_organizador=direccion_organizador,
-                codigo=nuevo_codigo
+                codigo=nuevo_codigo,
+                contract_address=contract_address  # ✅ guardamos el contrato asociado
             )
 
-            # ✅ Si es una solicitud AJAX (fetch)
+            # ✅ Si es AJAX (fetch desde el frontend)
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
@@ -55,18 +61,35 @@ def crear_junta(request):
     return render(request, 'dinero_app/crear_junta.html')
 
 
-# Ver una junta creada (organizador)
+# ===========================
+# Ver una junta (organizador o participante)
+# ===========================
 def ver_junta(request, codigo):
     junta = get_object_or_404(Junta, codigo=codigo)
-    return render(request, 'dinero_app/ver_junta.html', {'junta': junta})
+
+    # Pasamos la info al frontend en formato JSON usable
+    junta_data = {
+        'codigo': junta.codigo,
+        'numero_participantes': junta.numero_participantes,
+        'cantidad_aporte': float(junta.cantidad_aporte),
+        'direccion_organizador': junta.direccion_organizador,
+        'contract_address': junta.contract_address or "",  # ✅ cada junta tiene su contrato
+        'fecha_creacion': junta.fecha_creacion.strftime("%Y-%m-%d %H:%M"),
+    }
+
+    return render(request, 'dinero_app/ver_junta.html', {'juntaData': junta_data})
 
 
+# ===========================
 # Página para unirse a una junta
+# ===========================
 def unirse_junta(request):
     return render(request, 'dinero_app/unirse.html')
 
 
+# ===========================
 # Buscar junta por código
+# ===========================
 def buscar_junta(request):
     codigo = request.GET.get('codigo')
     if codigo:
@@ -78,3 +101,4 @@ def buscar_junta(request):
                 'error': '⚠️ No existe ninguna junta con ese código.'
             })
     return render(request, 'dinero_app/unirse.html')
+

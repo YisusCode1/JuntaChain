@@ -1,6 +1,6 @@
 // ==================== CONFIGURACIÓN BASE ====================
 const cantidadParticipantes = juntaData.numero_participantes; // viene de Django
-const contractAddress = "0xb17639947f7817131cb66E23820b868306a7c9d7"; // tu contrato
+const contractAddress = juntaData.contract_address; // dirección del contrato de esta junta
 const contractABI = [
     {
         "inputs": [],
@@ -34,7 +34,7 @@ let contract, provider;
 // ==================== INICIALIZAR ====================
 async function inicializar() {
     if (!window.ethereum) {
-        alert("⚠️ Abre esta página desde Rainbow Wallet o MetaMask.");
+        alert("⚠️ Abre esta página desde Rainbow Wallet (o MetaMask compatible).");
         return;
     }
 
@@ -50,7 +50,7 @@ async function inicializar() {
 // ==================== GENERAR INPUTS ====================
 function generarInputs() {
     const contenedor = document.getElementById("contenedorPagos");
-    contenedor.innerHTML = ""; // limpiar
+    contenedor.innerHTML = "";
 
     for (let i = 0; i < cantidadParticipantes; i++) {
         const div = document.createElement("div");
@@ -65,17 +65,19 @@ function generarInputs() {
         contenedor.appendChild(div);
     }
 
-    const btnEmpezar = document.getElementById("btnEmpezar");
-    btnEmpezar.addEventListener("click", empezarJunta);
+    const btnAporte = document.getElementById("btnAporte");
+    btnAporte.addEventListener("click", activarTemporizador);
+    btnAporte.disabled = true;
 }
 
 // ==================== MARCAR PAGOS EXISTENTES ====================
 async function marcarPagosExistentes() {
+    pagosValidados = 0;
+
     for (let i = 0; i < cantidadParticipantes; i++) {
         const input = document.getElementById(`addr_${i}`);
         const check = document.getElementById(`check_${i}`);
 
-        // Esperar a que el usuario ingrese la dirección o usar participantes del contrato
         const participanteAddress = input.value || await contract.participantes(i);
         input.value = participanteAddress;
 
@@ -86,28 +88,42 @@ async function marcarPagosExistentes() {
         }
     }
 
-    document.getElementById("btnEmpezar").disabled = pagosValidados !== cantidadParticipantes;
+    const btnAporte = document.getElementById("btnAporte");
+    btnAporte.disabled = pagosValidados !== cantidadParticipantes;
+
+    if (pagosValidados === cantidadParticipantes) {
+        document.getElementById("estadoPagos").textContent = "✅ Todos los participantes han pagado su colateral.";
+    }
 }
 
-// ==================== FUNCIONES PRINCIPALES ====================
+// ==================== PAGO INDIVIDUAL ====================
 async function pagar(index) {
     const inputAddress = document.getElementById(`addr_${index}`).value.trim();
-    if (!inputAddress) { alert("Ingresa tu dirección"); return; }
-
-    const [connectedAddress] = await provider.send("eth_requestAccounts", []);
-    if (connectedAddress.toLowerCase() !== inputAddress.toLowerCase()) {
-        alert("La dirección conectada no coincide");
+    if (!inputAddress) {
+        alert("Ingresa tu dirección");
         return;
     }
 
-    const aporteEth = 0.01; // ejemplo fijo, cambiar según lógica
+    const [connectedAddress] = await provider.send("eth_requestAccounts", []);
+    if (connectedAddress.toLowerCase() !== inputAddress.toLowerCase()) {
+        alert("La dirección conectada no coincide con la ingresada");
+        return;
+    }
+
+    const aporteEth = 0.01; // monto ejemplo, podrías hacerlo dinámico desde Django
+
     try {
         const tx = await contract.aportar({ value: ethers.parseEther(String(aporteEth)) });
         await tx.wait();
 
         document.getElementById(`check_${index}`).style.display = "inline";
         pagosValidados++;
-        document.getElementById("btnEmpezar").disabled = pagosValidados !== cantidadParticipantes;
+
+        if (pagosValidados === cantidadParticipantes) {
+            document.getElementById("btnAporte").disabled = false;
+            document.getElementById("estadoPagos").textContent = "✅ Todos los participantes completaron el pago del colateral.";
+        }
+
         alert("Pago validado ✅");
     } catch (e) {
         console.error(e);
@@ -115,31 +131,39 @@ async function pagar(index) {
     }
 }
 
-async function empezarJunta() {
-    try {
-        // Validar que solo el organizador pueda iniciar
-        const organizador = await contract.organizador();
-        const [connectedAddress] = await provider.send("eth_requestAccounts", []);
-        if (connectedAddress.toLowerCase() !== organizador.toLowerCase()) {
-            alert("❌ Solo el organizador puede iniciar la junta.");
-            return;
+// ==================== TEMPORIZADOR 48 HORAS ====================
+let temporizadorActivo = false;
+let tiempoRestante = 48 * 60 * 60; // 48 horas en segundos
+let temporizadorInterval;
+
+function activarTemporizador() {
+    if (temporizadorActivo) return;
+
+    temporizadorActivo = true;
+    const countdown = document.getElementById("temporizador");
+    countdown.style.display = "block";
+
+    function actualizarTemporizador() {
+        const horas = Math.floor(tiempoRestante / 3600);
+        const minutos = Math.floor((tiempoRestante % 3600) / 60);
+        const segundos = tiempoRestante % 60;
+
+        countdown.textContent = `⏳ Tiempo restante: ${horas}h ${minutos}m ${segundos}s`;
+
+        if (tiempoRestante <= 0) {
+            clearInterval(temporizadorInterval);
+            countdown.textContent = "⏰ Tiempo finalizado";
+            alert("El tiempo de aporte ha terminado.");
+        } else {
+            tiempoRestante--;
         }
-
-        // Llamar al contrato
-        const tx = await contract.iniciarJunta();
-        await tx.wait();
-
-        alert("🚀 ¡Junta iniciada!");
-        
-        // Redireccionar a /aporte
-        window.location.href = "/aporte";
-    } catch (e) {
-        console.error("Error al iniciar la junta:", e);
-        alert("Error al iniciar la junta: " + (e.message || JSON.stringify(e)));
     }
+
+    actualizarTemporizador();
+    temporizadorInterval = setInterval(actualizarTemporizador, 1000);
 }
 
-// ==================== EVENTO DOM ====================
+// ==================== INICIO ====================
 document.addEventListener("DOMContentLoaded", inicializar);
 
 
