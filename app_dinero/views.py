@@ -22,7 +22,7 @@ def crear_junta(request):
             direccion_organizador = request.POST.get('direccion_organizador')
             contract_address = request.POST.get('contract_address')  # ✅ viene del front o Factory
 
-            # Obtener el último código existente (solo los numéricos)
+            # Obtener el último código existente
             ultimo_codigo = Junta.objects.aggregate(Max('codigo'))['codigo__max']
             try:
                 nuevo_numero = int(ultimo_codigo) + 1 if ultimo_codigo else 1
@@ -40,7 +40,7 @@ def crear_junta(request):
                 contract_address=contract_address  # ✅ guardamos el contrato asociado
             )
 
-            # ✅ Si es AJAX (fetch desde el frontend)
+            # ✅ Si viene de AJAX (fetch)
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
@@ -49,7 +49,7 @@ def crear_junta(request):
                     'redirect_url': f'/ver_junta/{nueva_junta.codigo}/'
                 })
 
-            # Si es formulario normal
+            # Si viene de formulario normal
             return redirect('ver_junta', codigo=nueva_junta.codigo)
 
         except Exception as e:
@@ -67,17 +67,18 @@ def crear_junta(request):
 def ver_junta(request, codigo):
     junta = get_object_or_404(Junta, codigo=codigo)
 
-    # Pasamos la info al frontend en formato JSON usable
+    # Preparamos datos limpios para el template
     junta_data = {
         'codigo': junta.codigo,
         'numero_participantes': junta.numero_participantes,
         'cantidad_aporte': float(junta.cantidad_aporte),
         'direccion_organizador': junta.direccion_organizador,
-        'contract_address': junta.contract_address or "",  # ✅ cada junta tiene su contrato
+        'contract_address': junta.contract_address or "",
         'fecha_creacion': junta.fecha_creacion.strftime("%Y-%m-%d %H:%M"),
     }
 
-    return render(request, 'dinero_app/ver_junta.html', {'juntaData': junta_data})
+    # ⚠️ Se pasa como 'junta' (no 'juntaData') para coincidir con tu HTML actual
+    return render(request, 'dinero_app/ver_junta.html', {'junta': junta_data})
 
 
 # ===========================
@@ -101,4 +102,5 @@ def buscar_junta(request):
                 'error': '⚠️ No existe ninguna junta con ese código.'
             })
     return render(request, 'dinero_app/unirse.html')
+
 

@@ -19,6 +19,9 @@ class Junta(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     empezada = models.BooleanField(default=False)
 
+    # ✅ Nuevo campo: dirección del contrato desplegado en la blockchain
+    contract_address = models.CharField(max_length=100, blank=True, null=True)
+
     class Meta:
         ordering = ["-fecha_creacion"]
 
@@ -60,3 +63,4 @@ class Participante(models.Model):
 
     def __str__(self):
         return f"{self.direccion} @ {self.junta.codigo}"
+
