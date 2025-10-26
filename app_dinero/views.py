@@ -17,23 +17,22 @@ def crear_junta(request):
             cantidad_aporte = float(request.POST.get('cantidad_aporte'))
             direccion_organizador = request.POST.get('direccion_organizador')
 
-            # Crear la junta base sin código aún
-            nueva_junta = Junta.objects.create(
-                numero_participantes=numero_participantes,
-                cantidad_aporte=cantidad_aporte,
-                direccion_organizador=direccion_organizador
-            )
-
             # Obtener el último código existente (solo los que son numéricos)
             ultimo_codigo = Junta.objects.aggregate(Max('codigo'))['codigo__max']
-
             try:
                 nuevo_numero = int(ultimo_codigo) + 1 if ultimo_codigo else 1
             except (TypeError, ValueError):
                 nuevo_numero = 1
 
-            nueva_junta.codigo = str(nuevo_numero).zfill(6)
-            nueva_junta.save()
+            nuevo_codigo = str(nuevo_numero).zfill(6)
+
+            # Crear la junta con el código ya asignado
+            nueva_junta = Junta.objects.create(
+                numero_participantes=numero_participantes,
+                cantidad_aporte=cantidad_aporte,
+                direccion_organizador=direccion_organizador,
+                codigo=nuevo_codigo
+            )
 
             # ✅ Si es una solicitud AJAX (fetch)
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -41,7 +40,6 @@ def crear_junta(request):
                     'success': True,
                     'codigo': nueva_junta.codigo,
                     'colateral': float(nueva_junta.colateral_total),
-                    # 👇 añadimos esto para que JS pueda redirigir
                     'redirect_url': f'/ver_junta/{nueva_junta.codigo}/'
                 })
 
@@ -55,6 +53,7 @@ def crear_junta(request):
                 return render(request, 'dinero_app/crear_junta.html', {'error': str(e)})
 
     return render(request, 'dinero_app/crear_junta.html')
+
 
 # Ver una junta creada (organizador)
 def ver_junta(request, codigo):
@@ -79,7 +78,3 @@ def buscar_junta(request):
                 'error': '⚠️ No existe ninguna junta con ese código.'
             })
     return render(request, 'dinero_app/unirse.html')
-
-
-
-

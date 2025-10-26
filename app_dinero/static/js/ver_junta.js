@@ -117,12 +117,25 @@ async function pagar(index) {
 
 async function empezarJunta() {
     try {
+        // Validar que solo el organizador pueda iniciar
+        const organizador = await contract.organizador();
+        const [connectedAddress] = await provider.send("eth_requestAccounts", []);
+        if (connectedAddress.toLowerCase() !== organizador.toLowerCase()) {
+            alert("❌ Solo el organizador puede iniciar la junta.");
+            return;
+        }
+
+        // Llamar al contrato
         const tx = await contract.iniciarJunta();
         await tx.wait();
-        alert("🚀 Junta iniciada!");
+
+        alert("🚀 ¡Junta iniciada!");
+        
+        // Redireccionar a /aporte
+        window.location.href = "/aporte";
     } catch (e) {
-        console.error(e);
-        alert("Error al iniciar la junta: " + e.message);
+        console.error("Error al iniciar la junta:", e);
+        alert("Error al iniciar la junta: " + (e.message || JSON.stringify(e)));
     }
 }
 

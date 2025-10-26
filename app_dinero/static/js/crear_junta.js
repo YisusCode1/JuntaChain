@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const resultado = document.getElementById("resultado");
     const btnCrear = form.querySelector("button[type='submit']");
 
-    // 💲 Etiqueta para mostrar el valor en USD
+    // Etiqueta para mostrar valor en USD
     const labelUSD = document.createElement("span");
     labelUSD.style.marginLeft = "10px";
     labelUSD.style.fontWeight = "bold";
@@ -15,16 +15,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 1️⃣ Detectar Rainbow Wallet
     const provider = window.ethereum;
     if (!provider) {
-        alert("⚠️ Por favor abre esta página desde Rainbow Wallet o instala su extensión.");
+        alert("⚠️ Abre esta página desde Rainbow Wallet o instala su extensión.");
         btnCrear.disabled = true;
         return;
     }
-
     console.log("🌈 Rainbow Wallet detectada");
 
     // 2️⃣ Configurar red Scroll Sepolia
     const scrollSepolia = {
-        chainId: "0x8274f", // ✅ 534351 en decimal
+        chainId: "0x8274f", // 534351 decimal
         chainName: "Scroll Sepolia Testnet",
         rpcUrls: ["https://sepolia-rpc.scroll.io"],
         nativeCurrency: { name: "Scroll Sepolia Ether", symbol: "ETH", decimals: 18 },
@@ -83,15 +82,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // 💲 Obtener precio una vez al inicio y actualizar cada cierto tiempo
+    // Obtener precio inicial y actualizar cada 5 min
     let precioETH = await obtenerPrecioETH();
     if (!precioETH) precioETH = 0;
     setInterval(async () => {
         const nuevoPrecio = await obtenerPrecioETH();
         if (nuevoPrecio) precioETH = nuevoPrecio;
-    }, 300000); // actualiza cada 5 min
+    }, 300000);
 
-    // 🧮 Escuchar cambios en el campo ETH y mostrar USD equivalente
+    // 5️⃣ Mostrar USD equivalente al ETH ingresado
     inputAporte.addEventListener("input", () => {
         const cantidadETH = parseFloat(inputAporte.value);
         if (!isNaN(cantidadETH) && cantidadETH > 0) {
@@ -102,9 +101,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // 5️⃣ Validar aporte entre $50 y $200 USD antes de crear la junta
+    // 6️⃣ Manejar submit del formulario
     form.addEventListener("submit", async (e) => {
-        e.preventDefault(); // 👈 Evita recarga
+        e.preventDefault(); // evitar recarga
 
         const cantidadETH = parseFloat(form.cantidad_aporte.value);
         if (isNaN(cantidadETH) || cantidadETH <= 0) {
@@ -114,9 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const cantidadUSD = cantidadETH * precioETH;
 
-        console.log(`💰 ETH: ${cantidadETH} ≈ USD: ${cantidadUSD.toFixed(2)}`);
-
-        // 🔍 Validación del rango en USD
+        // Validación del rango en USD
         if (cantidadUSD < 50 || cantidadUSD > 200) {
             alert(`❌ El aporte debe equivaler entre $50 y $200 USD.
 Tu monto actual (${cantidadETH} ETH) equivale a ${cantidadUSD.toFixed(2)} USD.`);
@@ -124,10 +121,7 @@ Tu monto actual (${cantidadETH} ETH) equivale a ${cantidadUSD.toFixed(2)} USD.`)
         }
 
         btnCrear.disabled = true;
-        resultado.innerHTML = `
-            Creando junta... 🔄<br>
-            Aporte: ${cantidadETH} ETH ≈ ${cantidadUSD.toFixed(2)} USD
-        `;
+        resultado.innerHTML = `Creando junta... 🔄<br>Aporte: ${cantidadETH} ETH ≈ ${cantidadUSD.toFixed(2)} USD`;
 
         const formData = new FormData(form);
 
@@ -148,7 +142,6 @@ Tu monto actual (${cantidadETH} ETH) equivale a ${cantidadUSD.toFixed(2)} USD.`)
                     🧾 Código: ${data.codigo}<br>
                     💰 Colateral total: ${data.colateral} ETH
                 `;
-
                 if (data.redirect_url) {
                     window.location.href = data.redirect_url;
                 }
@@ -163,3 +156,4 @@ Tu monto actual (${cantidadETH} ETH) equivale a ${cantidadUSD.toFixed(2)} USD.`)
         }
     });
 });
+
