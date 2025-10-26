@@ -1,138 +1,56 @@
 // ==================== CONFIGURACIÓN BASE ====================
-const cantidadParticipantes = juntaData.numero_participantes;
-const contractAddress = "0xD5cfb65385AC6E00d74fD17E03C784b52BF316bC"; // tu contrato
+const cantidadParticipantes = juntaData.numero_participantes; // viene de Django
+const contractAddress = "0xb17639947f7817131cb66E23820b868306a7c9d7"; // tu contrato
 const contractABI = [
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "who",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "Aportado",
-		"type": "event"
-	},
-	{
-		"inputs": [],
-		"name": "aportar",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "iniciarJunta",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"anonymous": false,
-		"inputs": [],
-		"name": "JuntaIniciada",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "aportes",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "balance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "empezada",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "organizador",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "total",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-]
-
+    {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            { "indexed": true, "internalType": "address", "name": "who", "type": "address" },
+            { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+        ],
+        "name": "Aportado",
+        "type": "event"
+    },
+    { "inputs": [], "name": "aportar", "outputs": [], "stateMutability": "payable", "type": "function" },
+    { "inputs": [], "name": "iniciarJunta", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+    { "anonymous": false, "inputs": [], "name": "JuntaIniciada", "type": "event" },
+    { "inputs": [{ "internalType": "address", "name": "", "type": "address" }], "name": "aportes", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+    { "inputs": [], "name": "balance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+    { "inputs": [], "name": "empezada", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" },
+    { "inputs": [], "name": "getParticipantes", "outputs": [{ "internalType": "address[]", "name": "", "type": "address[]" }], "stateMutability": "view", "type": "function" },
+    { "inputs": [], "name": "organizador", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
+    { "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "name": "participantes", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" },
+    { "inputs": [], "name": "total", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
+];
 
 let pagosValidados = 0;
+let contract, provider;
 
-// ==================== GENERAR INPUTS ====================
-document.addEventListener("DOMContentLoaded", () => {
-    const contenedor = document.getElementById("contenedorPagos");
-    const btnEmpezar = document.getElementById("btnEmpezar");
-
-    // 🧩 Validar cantidad de participantes
-    if (cantidadParticipantes < 3 || cantidadParticipantes > 6) {
-        alert("⚠️ La junta debe tener entre 3 y 6 participantes.");
-        btnEmpezar.disabled = true;
+// ==================== INICIALIZAR ====================
+async function inicializar() {
+    if (!window.ethereum) {
+        alert("⚠️ Abre esta página desde Rainbow Wallet o MetaMask.");
         return;
     }
+
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const signer = await provider.getSigner();
+    contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+    generarInputs();
+    await marcarPagosExistentes();
+}
+
+// ==================== GENERAR INPUTS ====================
+function generarInputs() {
+    const contenedor = document.getElementById("contenedorPagos");
+    contenedor.innerHTML = ""; // limpiar
 
     for (let i = 0; i < cantidadParticipantes; i++) {
         const div = document.createElement("div");
@@ -147,103 +65,70 @@ document.addEventListener("DOMContentLoaded", () => {
         contenedor.appendChild(div);
     }
 
+    const btnEmpezar = document.getElementById("btnEmpezar");
     btnEmpezar.addEventListener("click", empezarJunta);
-});
+}
 
-// ==================== FUNCIONES ====================
+// ==================== MARCAR PAGOS EXISTENTES ====================
+async function marcarPagosExistentes() {
+    for (let i = 0; i < cantidadParticipantes; i++) {
+        const input = document.getElementById(`addr_${i}`);
+        const check = document.getElementById(`check_${i}`);
 
-// --- Pagar colateral ---
-async function pagar(index) {
-    if (!window.ethereum) {
-        alert("⚠️ Abre esta página desde Rainbow Wallet o MetaMask.");
-        return;
-    }
+        // Esperar a que el usuario ingrese la dirección o usar participantes del contrato
+        const participanteAddress = input.value || await contract.participantes(i);
+        input.value = participanteAddress;
 
-    const inputAddress = document.getElementById(`addr_${index}`).value.trim();
-    if (!inputAddress) {
-        alert("⚠️ Ingresa tu dirección antes de pagar.");
-        return;
-    }
-
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const [connectedAddress] = await provider.send("eth_requestAccounts", []);
-
-    if (connectedAddress.toLowerCase() !== inputAddress.toLowerCase()) {
-        alert("❌ La dirección conectada no coincide con la ingresada.");
-        return;
-    }
-
-    // ✅ Obtener precio actual del ETH en USD
-    const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
-    const data = await response.json();
-    const ethPriceUsd = data.ethereum.usd;
-
-    // ⚙️ Verificar que el aporte esté dentro del rango permitido
-    let aporteUsd = 150; // puedes personalizar este valor según tu lógica
-    if (aporteUsd < 50 || aporteUsd > 200) {
-        alert("⚠️ El aporte debe estar entre $50 y $200 USD.");
-        return;
-    }
-
-    // 💵 Calcular el equivalente en ETH
-    const aporteEth = aporteUsd / ethPriceUsd;
-    alert(`💰 Colateral: $${aporteUsd} USD ≈ ${aporteEth.toFixed(6)} ETH`);
-
-    const signer = await provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, contractABI, signer);
-
-    try {
-        // 🧮 Verificar saldo antes de enviar
-        const balanceWei = await provider.getBalance(connectedAddress);
-        const balanceEth = parseFloat(ethers.formatEther(balanceWei));
-
-        const totalNecesario = aporteEth + 0.001; // margen gas
-        if (balanceEth < totalNecesario) {
-            alert(`❌ Saldo insuficiente.\nTienes ${balanceEth.toFixed(6)} ETH y necesitas al menos ${totalNecesario.toFixed(6)} ETH (incluyendo gas).`);
-            return;
+        const aporte = await contract.aportes(participanteAddress);
+        if (aporte > 0) {
+            check.style.display = "inline";
+            pagosValidados++;
         }
+    }
 
-        // 🚀 Enviar el pago
-        const tx = await contract.aportar({
-            value: ethers.parseEther(String(aporteEth))
-        });
+    document.getElementById("btnEmpezar").disabled = pagosValidados !== cantidadParticipantes;
+}
+
+// ==================== FUNCIONES PRINCIPALES ====================
+async function pagar(index) {
+    const inputAddress = document.getElementById(`addr_${index}`).value.trim();
+    if (!inputAddress) { alert("Ingresa tu dirección"); return; }
+
+    const [connectedAddress] = await provider.send("eth_requestAccounts", []);
+    if (connectedAddress.toLowerCase() !== inputAddress.toLowerCase()) {
+        alert("La dirección conectada no coincide");
+        return;
+    }
+
+    const aporteEth = 0.01; // ejemplo fijo, cambiar según lógica
+    try {
+        const tx = await contract.aportar({ value: ethers.parseEther(String(aporteEth)) });
         await tx.wait();
 
         document.getElementById(`check_${index}`).style.display = "inline";
         pagosValidados++;
-        if (pagosValidados === cantidadParticipantes) {
-            document.getElementById("btnEmpezar").disabled = false;
-        }
-
-        alert(`✅ Pago validado para participante ${index + 1}`);
+        document.getElementById("btnEmpezar").disabled = pagosValidados !== cantidadParticipantes;
+        alert("Pago validado ✅");
     } catch (e) {
         console.error(e);
-        alert("❌ Error al enviar el pago: " + e.message);
+        alert("Error al pagar: " + e.message);
     }
 }
 
-// --- Empezar la junta ---
 async function empezarJunta() {
-    if (!window.ethereum) {
-        alert("⚠️ Abre esta página desde Rainbow Wallet o MetaMask.");
-        return;
-    }
-
     try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        const signer = await provider.getSigner();
-        const contract = new ethers.Contract(contractAddress, contractABI, signer);
-
         const tx = await contract.iniciarJunta();
         await tx.wait();
-
-        alert("🚀 ¡Junta iniciada exitosamente!");
+        alert("🚀 Junta iniciada!");
     } catch (e) {
         console.error(e);
         alert("Error al iniciar la junta: " + e.message);
     }
 }
+
+// ==================== EVENTO DOM ====================
+document.addEventListener("DOMContentLoaded", inicializar);
+
 
 
 
