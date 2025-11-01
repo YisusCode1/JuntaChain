@@ -1,27 +1,24 @@
 // ==================== CONFIGURACIÓN BASE ====================
-
-// Validar que juntaData exista antes de usarla
 if (typeof juntaData === "undefined") {
-    alert("⚠️ Error: No se encontró la información de la junta (juntaData). Verifica tu plantilla HTML.");
-    throw new Error("juntaData no está definida. Asegúrate de declararla en el HTML antes de cargar ver_junta.js.");
+    alert("⚠️ Error: No se encontró la información de la junta (juntaData).");
+    throw new Error("juntaData no está definida.");
 }
 
+
 const cantidadParticipantes = juntaData.numero_participantes;
-const contractAddress = "0x63BE3AecF252008397eDBc9bD37a4244CA04dd52";
+const contractAddress = "0x3D624d4083b67C21720B076d6FBcc95d8d567EFc";
 
 const contractABI = [
 	{
-		"inputs": [],
-		"name": "crearJunta",
-		"outputs": [
+		"inputs": [
 			{
 				"internalType": "address",
-				"name": "",
+				"name": "_organizador",
 				"type": "address"
 			}
 		],
 		"stateMutability": "nonpayable",
-		"type": "function"
+		"type": "constructor"
 	},
 	{
 		"anonymous": false,
@@ -29,27 +26,105 @@ const contractABI = [
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "organizador",
+				"name": "who",
 				"type": "address"
 			},
 			{
 				"indexed": false,
-				"internalType": "address",
-				"name": "juntaAddress",
-				"type": "address"
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
 			}
 		],
-		"name": "JuntaCreada",
+		"name": "Aportado",
 		"type": "event"
 	},
 	{
 		"inputs": [],
-		"name": "obtenerJuntas",
+		"name": "aportar",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "iniciarJunta",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [],
+		"name": "JuntaIniciada",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "aportes",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "balance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "empezada",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getParticipantes",
 		"outputs": [
 			{
 				"internalType": "address[]",
 				"name": "",
 				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "organizador",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -63,12 +138,25 @@ const contractABI = [
 				"type": "uint256"
 			}
 		],
-		"name": "todasLasJuntas",
+		"name": "participantes",
 		"outputs": [
 			{
 				"internalType": "address",
 				"name": "",
 				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "total",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -80,10 +168,9 @@ let pagosValidados = 0;
 let contract, provider, signer;
 
 
-// ==================== INICIALIZAR ====================
 async function inicializar() {
     if (!window.ethereum) {
-        alert("⚠️ Abre esta página desde Rainbow Wallet (o MetaMask compatible).");
+        alert("⚠️ Abre esta página desde Rainbow Wallet o MetaMask compatible.");
         return;
     }
 
@@ -130,7 +217,6 @@ function generarInputs() {
 // ==================== MARCAR PAGOS EXISTENTES ====================
 async function marcarPagosExistentes() {
     pagosValidados = 0;
-
     try {
         const participantes = await contract.getParticipantes();
         console.log("👥 Participantes actuales:", participantes);
@@ -138,15 +224,19 @@ async function marcarPagosExistentes() {
         for (let i = 0; i < cantidadParticipantes; i++) {
             const input = document.getElementById(`addr_${i}`);
             const check = document.getElementById(`check_${i}`);
-
             const participanteAddress = participantes[i] || "";
+
             input.value = participanteAddress;
 
-            if (participanteAddress) {
-                const aporte = await contract.aportes(participanteAddress);
-                if (Number(aporte) > 0) {
-                    check.style.display = "inline";
-                    pagosValidados++;
+            if (participanteAddress && participanteAddress !== "0x0000000000000000000000000000000000000000") {
+                try {
+                    const aporte = await contract.aportes(participanteAddress);
+                    if (Number(aporte) > 0) {
+                        check.style.display = "inline";
+                        pagosValidados++;
+                    }
+                } catch(e) {
+                    console.warn(`No se pudo consultar aporte de ${participanteAddress}:`, e);
                 }
             }
         }
@@ -176,8 +266,7 @@ async function pagar(index) {
         return;
     }
 
-    // Aquí el usuario paga su colateral
-    let aporteEth = 0.01; // Puedes ajustar dinámicamente según tu lógica
+    const aporteEth = 0.01; // Colateral, ajustar según lógica
     try {
         const tx = await contract.aportar({ value: ethers.parseEther(String(aporteEth)) });
         await tx.wait();
@@ -205,7 +294,7 @@ function iniciarAporte() {
 
 // ==================== TEMPORIZADOR 48 HORAS ====================
 let temporizadorActivo = false;
-let tiempoRestante = 48 * 60 * 60; // 48 horas
+let tiempoRestante = 48 * 60 * 60;
 let temporizadorInterval;
 
 function activarTemporizador() {
@@ -237,11 +326,8 @@ function activarTemporizador() {
 // ==================== SORTEO FINAL ====================
 function sorteoFinal() {
     const resultadosDiv = document.getElementById("resultadosSorteo");
-
-    // Ejemplo de sorteo: primer participante es organizador
     const participantes = Array.from(document.querySelectorAll(".direccion")).map(input => input.value);
-    const ganador = participantes[0]; // el primer participante (organizador) gana por defecto
-
+    const ganador = participantes[0]; // Organizador gana por defecto
     resultadosDiv.textContent = `🏆 Ganador del sorteo: ${ganador}`;
     alert(`🏆 Sorteo finalizado. Ganador: ${ganador}`);
 }
